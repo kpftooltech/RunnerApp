@@ -250,13 +250,23 @@
     }
 
     startCameraBtn.addEventListener('click', async () => {
+        // Requesting a higher, Full HD resolution from the camera
+        const constraints = {
+            video: {
+                facingMode: { ideal: 'environment' },
+                width: { ideal: 1920 },  // Changed from 1280
+                height: { ideal: 1080 } // Changed from 720
+            },
+            audio: false
+        };
+
         cameraModal.style.display = 'flex';
         try {
-            currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
             cameraView.srcObject = currentStream;
         } catch (error) {
             console.error("Error accessing camera:", error);
-            alert("Could not access the camera. Please ensure you have a camera and have granted permission.");
+            alert("Could not access the camera. On mobile, this often requires a secure (https://) connection. Please ensure you have granted camera permissions for this site.");
             closeCamera();
         }
     });
@@ -268,7 +278,7 @@
         context.drawImage(cameraView, 0, 0, cameraCanvas.width, cameraCanvas.height);
         
         // Convert canvas to Base64 JPEG data URL
-        capturedImageData = cameraCanvas.toDataURL('image/jpeg');
+        capturedImageData = cameraCanvas.toDataURL('image/jpeg', 1.0);
         
         // Show the preview
         imagePreview.src = capturedImageData;
