@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplier Transfer Form 2</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <style>
+        html { box-sizing: border-box; }
+        *, *::before, *::after { box-sizing: inherit; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container {
+            background: #ffffff;
+            padding: 2rem 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 800px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 2rem;
+            text-align: center;
+            font-weight: 700;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .form-group { margin-bottom: 1.5rem; }
+        .full-width { grid-column: 1 / -1; }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #555;
+        }
+        /* Hide mobile-only labels by default */
+        .mobile-label { display: none; } 
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        /* --- NEW RESPONSIVE ITEM LIST STYLES --- */
+        .items-header-grid {
+            display: grid;
+            /* Adjust columns to better fit content and button */
+            grid-template-columns: 55% 25% 20%; 
+            gap: 1rem;
+            padding: 0 0.8rem 0.8rem;
+            border-bottom: 2px solid #eee;
+            font-weight: 600;
+            color: #333;
+        }
+        #items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem; /* Small space between rows */
+        }
+        .item-row {
+            display: grid;
+            grid-template-columns: 55% 25% 20%; /* Must match header */
+            gap: 1rem;
+            align-items: center; /* Vertically center row contents */
+            border-bottom: 1px solid #eee;
+            padding: 0.5rem 0.8rem;
+        }
+        .item-row:last-child {
+            border-bottom: none;
+        }
+        /* --- END NEW ITEM LIST STYLES --- */
+
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1rem; /* Ensure consistent font size */
+        }
+        .btn-primary { background-color: #007bff; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-danger { background-color: #dc3545; padding: 0.5rem 1rem; }
+        
+        .button-group {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 2.5rem;
+        }
+        #status-message {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+            display: none; /* Hidden by default */
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .submitting { background-color: #fff3cd; color: #856404; }
+        
+        /* Image & Camera Styles */
+        #image-preview-container {
+            margin-top: 1rem;
+            text-align: center;
+        }
+        #image-preview {
+            max-width: 150px;
+            max-height: 150px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+            display: none;
+        }
+        .camera-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+        }
+        .camera-container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            width: 95%;
+            max-width: 540px;
+        }
+        #camera-view {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+
+        /* Styles for Choices.js dropdown */
+        .choices__inner { padding: 0.65rem; border-radius: 6px; font-size: 1rem; }
+        .choices[data-type*="select-one"]::after { right: 11.5px; margin-top: -3.5px; }
+
+        /* --- NEW RESPONSIVE MEDIA QUERIES --- */
+        @media (max-width: 768px) {
+            body {
+                padding: 0; /* Use full screen width */
+                align-items: flex-start;
+            }
+            .container {
+                padding: 1.5rem 1rem; /* Reduce container padding */
+                border-radius: 0; /* Remove radius for full-width feel */
+                box-shadow: none;
+                min-height: 100vh;
+            }
+            h1 { font-size: 1.8rem; }
+
+            /* Stack supplier fields */
+            .form-grid {
+                grid-template-columns: 1fr; 
+                gap: 0 1.5rem; /* Keep vertical gap, remove horizontal */
+            }
+            .form-group {
+                margin-bottom: 1rem; /* Tighten up spacing */
+            }
+
+            /* Responsive Item List: Hide header, convert rows to 'cards' */
+            .items-header-grid {
+                display: none; 
+            }
+            .item-row {
+                grid-template-columns: 1fr; /* Stack all cells */
+                gap: 1rem; /* Space between stacked cells */
+                padding: 1.25rem;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                margin-bottom: 1rem; /* Space between each item 'card' */
+            }
+            .mobile-label {
+                display: block; /* Show mobile-only labels */
+                margin-bottom: 0.5rem;
+                font-weight: 600;
+                color: #555;
+            }
+            .item-action-cell .btn-danger {
+                width: 100%; /* Make remove button full width */
+            }
+            
+            /* Full-width main buttons */
+            .button-group {
+                justify-content: stretch;
+            }
+            .button-group .btn {
+                width: 100%; 
+            }
+            button.btn-secondary {
+                width: 100%; /* Make add item button full width */
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="main-content">
+    <h1>Create New Transfer</h1>
+    <p style="text-align:center; margin-top:-1.5rem; margin-bottom:2rem; color:#666;">Date and time are recorded automatically.</p>
+
+    <form id="transferForm">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="fromSupplier">From Supplier</label>
+                <input type="text" id="fromSupplier" required>
+            </div>
+            <div class="form-group">
+                <label for="toSupplier">To Supplier</label>
+                <input type="text" id="toSupplier" required>
+            </div>
+        </div>
+
+        <div class="form-group full-width">
+            <label>Attach Photo (Optional)</label>
+            <button type="button" id="start-camera-btn" class="btn btn-secondary">Take Photo</button>
+            <div id="image-preview-container">
+                <img id="image-preview" src="#" alt="Captured Photo Preview"/>
+            </div>
+        </div>
+
+        <hr style="border:none; border-top:1px solid #eee; margin: 2rem 0;">
+
+        <h3>Items</h3>
+        <div class="items-header-grid">
+             <div>Item</div>
+             <div>Quantity</div>
+             <div>Action</div>
+        </div>
+        <div id="items-list">
+            </div>
+        <button type="button" class="btn btn-secondary" onclick="addItem()" style="margin-top: 1rem;">+ Add Item</button>
+
+        <div class="button-group">
+            <button type="submit" class="btn btn-primary">Submit Transfer</button>
+        </div>
+
+        <div id="status-message"></div>
+    </form>
+</div>
+
+<div id="camera-modal" class="camera-modal">
+    <div class="camera-container">
+        <video id="camera-view" autoplay playsinline></video>
+        <button type="button" id="capture-btn" class="btn btn-primary">Capture</button>
+        <button type="button" id="cancel-camera-btn" class="btn btn-secondary">Cancel</button>
+    </div>
+</div>
+<canvas id="camera-canvas" style="display:none;"></canvas>
+
+<script>
+    // ##################################################################
+    // ## PASTE YOUR NEW GOOGLE APPS SCRIPT WEB APP URL HERE ##
+    // ##################################################################
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxcT848u98e5ji_uJUeVVPrrHs7UC8ii8TP2xlzRFltSdjAzg6nUNIRSvWhAZuVpYRuhQ/exec";
+    
+    let itemData = [];
+    let choiceInstances = [];
+    let capturedImageData = null; // Variable to store the captured Base64 image data
+
+    // Fetch and process item data on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const statusMessage = document.getElementById('status-message');
+        statusMessage.textContent = 'Loading item list...';
+        statusMessage.className = 'submitting';
+        statusMessage.style.display = 'block';
+
+        fetch(SCRIPT_URL)
+            .then(response => response.json())
+            .then(serverData => {
+                if (serverData.status === 'success') {
+                    itemData = serverData.data.map(item => ({
+                        value: item.code,
+                        label: `${item.code} - ${item.item} (${item.l} x ${item.w} x ${item.t})`
+                    }));
+                    addItem();
+                    statusMessage.style.display = 'none';
+                } else { throw new Error(serverData.message); }
+            })
+            .catch(error => {
+                console.error('Error fetching item data:', error);
+                statusMessage.textContent = 'Error: Could not load item list. Check Script URL and Sheet permissions.';
+                statusMessage.className = 'error';
+            });
+    });
+
+    // --- NEW CAMERA LOGIC ---
+    const startCameraBtn = document.getElementById('start-camera-btn');
+    const cameraModal = document.getElementById('camera-modal');
+    const cameraView = document.getElementById('camera-view');
+    const captureBtn = document.getElementById('capture-btn');
+    const cancelCameraBtn = document.getElementById('cancel-camera-btn');
+    const cameraCanvas = document.getElementById('camera-canvas');
+    const imagePreview = document.getElementById('image-preview');
+    let currentStream;
+
+    function closeCamera() {
+        cameraModal.style.display = 'none';
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+    }
+
+    startCameraBtn.addEventListener('click', async () => {
+        const constraints = {
+            video: {
+                facingMode: { ideal: 'environment' },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 } 
+            },
+            audio: false
+        };
+
+        cameraModal.style.display = 'flex';
+        try {
+            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            cameraView.srcObject = currentStream;
+        } catch (error) {
+            console.error("Error accessing camera:", error);
+            alert("Could not access the camera. On mobile, this often requires a secure (https://) connection. Please ensure you have granted camera permissions for this site.");
+            closeCamera();
+        }
+    });
+
+    captureBtn.addEventListener('click', () => {
+        const context = cameraCanvas.getContext('2d');
+        cameraCanvas.width = cameraView.videoWidth;
+        cameraCanvas.height = cameraView.videoHeight;
+        context.drawImage(cameraView, 0, 0, cameraCanvas.width, cameraCanvas.height);
+        
+        capturedImageData = cameraCanvas.toDataURL('image/jpeg', 1.0);
+        
+        imagePreview.src = capturedImageData;
+        imagePreview.style.display = 'block';
+
+        closeCamera();
+    });
+
+    cancelCameraBtn.addEventListener('click', closeCamera);
+    // --- END OF NEW CAMERA LOGIC ---
+
+    function addItem() {
+        const itemsList = document.getElementById('items-list');
+        // MODIFIED: Create a 'div' instead of a 'tr'
+        const newRow = document.createElement('div');
+        newRow.className = 'item-row'; // Assign the class for grid styling
+        
+        const uniqueId = `item-select-${choiceInstances.length}`;
+        const qtyUniqueId = `qty-${uniqueId}`; // Unique ID for quantity label pairing
+
+        // MODIFIED: InnerHTML uses divs for cells and adds mobile-only labels
+        newRow.innerHTML = `
+            <div class="item-select-cell">
+                <label for="${uniqueId}" class="mobile-label">Item</label>
+                <select id="${uniqueId}" name="itemCode"></select>
+            </div>
+            <div class="item-quantity-cell">
+                <label for="${qtyUniqueId}" class="mobile-label">Quantity</label>
+                <input type="number" id="${qtyUniqueId}" name="quantity" required min="1" placeholder="e.g., 50">
+            </div>
+            <div class="item-action-cell">
+                <label class="mobile-label">&nbsp;</label> <button type="button" class="btn btn-danger" onclick="removeItem(this)">Remove</button>
+            </div>
+        `;
+        itemsList.appendChild(newRow);
+        
+        const selectElement = document.getElementById(uniqueId);
+        const choice = new Choices(selectElement, {
+            choices: itemData, searchEnabled: true, itemSelectText: 'Select', placeholder: true,
+            placeholderValue: 'Type to search for an item...', shouldSort: false,
+        });
+        choiceInstances.push(choice);
+    }
+
+    function removeItem(button) {
+        // MODIFIED: Find the closest '.item-row' parent instead of 'tr'
+        const row = button.closest('.item-row'); 
+        const selectId = row.querySelector('select').id;
+        const instanceIndex = choiceInstances.findIndex(inst => inst.passedElement.element.id === selectId);
+        
+        if (instanceIndex > -1) {
+            choiceInstances[instanceIndex].destroy();
+            choiceInstances.splice(instanceIndex, 1);
+        }
+        row.remove();
+    }
+    
+    // Form submission logic
+    const form = document.getElementById('transferForm');
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const submitButton = form.querySelector('button[type="submit"]');
+        const statusMessage = document.getElementById('status-message');
+        
+        if (SCRIPT_URL.includes("PASTE_YOUR_NEW_WEB_APP_URL_HERE")) {
+            alert("Configuration Error: Please paste your Google Apps Script Web App URL into the SCRIPT_URL constant in this HTML file.");
+            return;
+        }
+
+        statusMessage.style.display = 'block';
+        statusMessage.textContent = 'Submitting...';
+        statusMessage.className = 'submitting';
+        submitButton.disabled = true;
+        submitButton.textContent = 'Submitting...';
+
+        const payload = {
+            fromSupplier: document.getElementById('fromSupplier').value.trim(),
+            toSupplier: document.getElementById('toSupplier').value.trim(),
+            items: []
+        };
+        
+        // MODIFIED: Query all '.item-row' divs instead of 'tr'
+        const itemRows = document.querySelectorAll('#items-list .item-row'); 
+        itemRows.forEach(row => {
+            const itemCodeSelect = row.querySelector('select[name="itemCode"]');
+            const quantityInput = row.querySelector('input[name="quantity"]');
+            if (itemCodeSelect.value && quantityInput.value) {
+                payload.items.push({ itemCode: itemCodeSelect.value, quantity: quantityInput.value });
+            }
+        });
+        
+        if (payload.items.length === 0 || !payload.items[0].itemCode) {
+            statusMessage.textContent = 'Error: Please add and select at least one item.';
+            statusMessage.className = 'error';
+            submitButton.disabled = false;
+            submitButton.textContent = 'Submit Transfer';
+            return;
+        }
+        
+        if (capturedImageData) {
+            payload.imageData = capturedImageData;
+            payload.imageName = `capture-${Date.now()}.jpg`;
+        }
+
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                statusMessage.textContent = `Success! Transfer ID ${data.transferId} has been logged.`;
+                statusMessage.className = 'success';
+                
+                form.reset();
+                capturedImageData = null; 
+                imagePreview.style.display = 'none';
+                imagePreview.src = '#';
+                
+                // MODIFIED: Query and remove all '.item-row' divs
+                document.querySelectorAll('#items-list .item-row').forEach(row => removeItem(row.querySelector('button')));
+                addItem();
+            } else {
+                throw new Error(data.message || 'An unknown error occurred on the server.');
+            }
+        })
+        .catch(error => {
+            console.error('Submission Error:', error);
+            statusMessage.textContent = `Error: ${error.message}`;
+            statusMessage.className = 'error';
+        })
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Submit Transfer';
+        });
+    });
+</script>
+
+</body>
+</html>
