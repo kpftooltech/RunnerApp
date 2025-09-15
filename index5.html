@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Logistics Log</title>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            overflow: hidden; 
+        }
+        
+        form { padding: 25px; }
+        h2, h3 { padding: 0 25px; }
+        h2 { text-align: center; color: #111; margin-top: 25px; }
+        h3 { margin-top: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+
+        div.form-group {
+            display: grid;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        input[type="text"],
+        input[type="number"],
+        input[type="url"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box; 
+        }
+        button {
+            padding: 12px 18px;
+            font-size: 1rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        /* Item Entry Form */
+        #addItemForm {
+            display: grid;
+            gap: 10px;
+            padding: 15px 25px;
+            background-color: #f9f9f9;
+            border-top: 1px solid #eee;
+        }
+        /* New 3-column layout for item entry */
+        .item-inputs {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* Code + Qty */
+            gap: 10px;
+        }
+        #addItemForm button { background-color: #28a745; color: white; width: 100%; }
+        #addItemForm button:hover { background-color: #218838; }
+
+        /* Item List (the "cart") */
+        #itemListContainer { padding: 0 25px 25px 25px; }
+        #itemList li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            word-break: break-all;
+        }
+        #itemList li button.remove-btn {
+            background: none; border: none; color: #dc3545;
+            font-weight: 700; font-size: 1rem; padding: 5px;
+        }
+
+        /* Main Submit Button Area */
+        .submit-area {
+            padding: 25px;
+            background-color: #f4f7f6;
+            border-top: 1px solid #ddd;
+        }
+        button#submitTransaction {
+            width: 100%; padding: 16px; font-size: 1.1rem;
+            background-color: #007BFF; color: white;
+        }
+        button:disabled { background-color: #999; cursor: not-allowed; }
+        
+        #message {
+            margin: 0 25px 25px 25px; padding: 12px; border-radius: 6px;
+            font-weight: 500; text-align: center; display: none; 
+        }
+        #message.success { background-color: #d4edda; color: #155724; display: block; }
+        #message.error { background-color: #f8d7da; color: #721c24; display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Supplier Transfer Log</h2>
+
+        <form id="mainForm">
+            <div class="form-group">
+                <label for="fromSupplier">From Supplier:</label>
+                <input type="text" id="fromSupplier" required>
+            </div>
+            <div class="form-group">
+                <label for="toSupplier">To Supplier (maps to supplier_name):</label>
+                <input type="text" id="toSupplier" required>
+            </div>
+             <div class="form-group">
+                <label for="jobType">Job Type:</label>
+                <input type="text" id="jobType" required>
+            </div>
+        </form>
+
+        <h3>Line Items</h3>
+        <div id="itemListContainer">
+            <ul id="itemList" style="list-style: none; padding: 0;"></ul>
+        </div>
+
+        <form id="addItemForm">
+            <div class="item-inputs">
+                <div class="form-group">
+                    <label for="itemCode">Item Code</label>
+                    <input type="text" id="itemCode">
+                </div>
+                <div class="form-group">
+                    <label for="itemQuantity">Quantity</label>
+                    <input type="number" id="itemQuantity" min="1">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="imageUrl">Image URL (Optional)</label>
+                <input type="url" id="imageUrl" placeholder="https://...">
+            </div>
+            <button type="submit">Add Item</button>
+        </form>
+
+        <div class="submit-area">
+            <div id="message"></div>
+            <button id="submitTransaction">Create Full DC & View</button>
+        </div>
+
+    </div>
+
+
+    <script>
+        // ====================================================================
+        // CONFIG: Paste your deployed Web App URL here
+        // ====================================================================
+        
+        const WEB_APP_URL = "PASTE_YOUR_DEPLOYED_WEB_APP_URL_HERE"; 
+        
+        // ====================================================================
+
+        // This array will hold all our item objects in memory
+        let lineItems = [];
+
+        // Get all the important elements
+        const mainForm = document.getElementById("mainForm");
+        const addItemForm = document.getElementById("addItemForm");
+        const submitButton = document.getElementById("submitTransaction");
+        const messageDiv = document.getElementById("message");
+        const itemListUl = document.getElementById("itemList");
+        
+        // --- 1. Add Item Form Listener ---
+        addItemForm.addEventListener("submit", function (e) {
+            e.preventDefault(); 
+            
+            const code = document.getElementById("itemCode").value;
+            const quantity = parseInt(document.getElementById("itemQuantity").value, 10);
+            let image = document.getElementById("imageUrl").value; // Get image URL
+            
+            if (!image) { image = "N/A"; } // Set a default if empty
+
+            if (code && quantity > 0) {
+                // Add the new item to our array
+                lineItems.push({ code, quantity, image });
+                
+                // Redraw the list on the page
+                renderItems();
+                
+                // Clear the input fields
+                document.getElementById("itemCode").value = "";
+                document.getElementById("itemQuantity").value = "";
+                document.getElementById("imageUrl").value = "";
+                document.getElementById("itemCode").focus(); // Set cursor back to item field
+            } else {
+                alert("Please enter a valid Item Code and Quantity.");
+            }
+        });
+
+        // --- 2. Function to redraw the item list on the page ---
+        function renderItems() {
+            itemListUl.innerHTML = ""; // Clear the entire list
+            
+            if (lineItems.length === 0) {
+                 itemListUl.innerHTML = "<li style='border:none; color:#777; text-align:center;'>No items added yet.</li>";
+            }
+
+            lineItems.forEach((item, index) => {
+                const li = document.createElement("li");
+                li.innerHTML = `
+                    <div>
+                        <strong>${item.code}</strong> (Qty: ${item.quantity})<br>
+                        <small style="color:#555;">${item.image}</small>
+                    </div>
+                    <button class="remove-btn" data-index="${index}">✖</button>
+                `;
+                itemListUl.appendChild(li);
+            });
+        }
+        
+        // --- 3. Add click listener to the list to handle "Remove" buttons ---
+        itemListUl.addEventListener("click", function (e) {
+            if (e.target && e.target.classList.contains("remove-btn")) {
+                const indexToRemove = parseInt(e.target.getAttribute("data-index"), 10);
+                lineItems.splice(indexToRemove, 1);
+                renderItems();
+            }
+        });
+        
+        // --- 4. Main Transaction Submit Button Listener ---
+        submitButton.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            if (!mainForm.checkValidity()) {
+                 alert("Please fill out all supplier and job type fields.");
+                 mainForm.reportValidity();
+                 return;
+            }
+            if (lineItems.length === 0) {
+                alert("You must add at least one item to the transaction.");
+                return;
+            }
+
+            submitButton.disabled = true;
+            submitButton.textContent = "Creating DC... Please Wait...";
+            messageDiv.style.display = "none";
+
+            // 1. Build the FINAL JSON object to send
+            const finalTransaction = {
+                fromSupplier: document.getElementById("fromSupplier").value,
+                toSupplier: document.getElementById("toSupplier").value,
+                jobType: document.getElementById("jobType").value,
+                items: lineItems  // Nest the entire item array
+            };
+
+            // 2. Send the complete object to Google Apps Script
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                mode: 'cors',
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(finalTransaction),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    messageDiv.textContent = `${data.message}. Opening PDF...`;
+                    messageDiv.className = "success";
+                    
+                    mainForm.reset();
+                    lineItems = []; 
+                    renderItems();  
+                    
+                    if (data.pdfUrl) {
+                        window.open(data.pdfUrl, '_blank'); // Open the new PDF!
+                    }
+                } else {
+                    messageDiv.textContent = `Error: ${data.message}`;
+                    messageDiv.className = "error";
+                }
+            })
+            .catch(error => {
+                console.error('Fetch Error:', error);
+                messageDiv.textContent = "A critical network or script error occurred.";
+                messageDiv.className = "error";
+            })
+            .finally(() => {
+                submitButton.disabled = false;
+                submitButton.textContent = "Create Full DC & View";
+            });
+        });
+        
+        // Initial render to show "No items" message
+        renderItems();
+    </script>
+
+</body>
+</html>
