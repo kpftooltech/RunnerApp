@@ -17,7 +17,7 @@
             --text-color: #212529;
             --text-muted: #6c757d;
             --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            --selection-bg: #e0f2ff; /* Light blue for selected rows */
+            --selection-bg: #e0f2ff;
         }
         body {
             font-family: 'Inter', sans-serif;
@@ -59,7 +59,6 @@
         th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
         th { background-color: var(--light-bg); font-weight: 500; color: var(--text-muted); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
         
-        /* Styles for clickable rows */
         tbody tr { cursor: pointer; transition: background-color 0.15s ease-in-out; }
         tbody tr:hover { background-color: var(--light-bg); }
         .selected-row { background-color: var(--selection-bg) !important; font-weight: 500; }
@@ -68,10 +67,29 @@
         #loading-bar-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 9999; display: none; }
         #loading-bar { height: 100%; width: 0%; background: var(--primary-color); transition: width 1.5s cubic-bezier(0.25, 1, 0.5, 1); }
         .page-view {}
-        .summary-item { display: grid; grid-template-columns: 1fr 80px; gap: 1rem; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); }
+        .summary-item { display: grid; grid-template-columns: 1fr 100px; gap: 1rem; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); }
         .summary-item-info p { margin: 0; }
         .summary-item-info .code { font-weight: 500; }
         .summary-item-info .desc { font-size: 0.9rem; color: var(--text-muted); }
+        
+        /* --- NEW: Modern style for the summary quantity input --- */
+        .summary-qty {
+            width: 100%; /* Make it fill the cell */
+            padding: 0.75rem;
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: 500;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box; /* Important for padding and width */
+            transition: all 0.2s ease;
+        }
+        .summary-qty:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            border-color: var(--primary-color);
+        }
+
         .summary-stats { background: var(--light-bg); padding: 1rem; border-radius: 8px; margin: 1.5rem 0; text-align: center; }
         .summary-stats h3 { margin-top: 0; }
         .summary-stats p { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); margin: 0; }
