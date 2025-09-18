@@ -1,4 +1,4 @@
-// This is the entire script. It waits for the HTML to be ready before running.
+// This wrapper ensures the entire script runs only after the HTML page is fully loaded.
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURATION ---
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let displayHeaders = []; 
     let selection = [];
 
-    // --- DOM ELEMENTS (now safely accessed after the page loads) ---
+    // --- DOM ELEMENTS ---
     const mainPage = document.getElementById('main-page');
     const summaryPage = document.getElementById('summary-page');
     const createSummaryBtn = document.getElementById('create-summary-btn');
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showMainView() {
         selection = [];
-        createSummaryBtn.disabled = true;
+        if(createSummaryBtn) createSummaryBtn.disabled = true;
         mainPage.style.display = 'block';
         summaryPage.style.display = 'none';
         renderTable(allPoData);
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tableContainer.innerHTML = tableHtml;
     }
 
-    // --- CORE APP LOGIC (FETCH, CACHE, ETC.) ---
+    // --- CORE APP LOGIC ---
     function showLoadingBar() {
         loadingBarContainer.style.display = 'block';
         loadingBar.style.width = '0%';
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchAndUpdateCache(); 
     }
     
-    // --- EVENT LISTENERS (now safely inside the DOMContentLoaded wrapper) ---
+    // --- EVENT LISTENERS ---
     searchInput.addEventListener('input', () => renderTable(allPoData));
     statusFilter.addEventListener('change', () => renderTable(allPoData));
     createSummaryBtn.addEventListener('click', showSummaryView);
@@ -248,7 +248,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 selection = selection.filter(c => c !== code);
             }
-            document.getElementById('select-all-cb').checked = tableContainer.querySelectorAll('.row-cb').length > 0 && tableContainer.querySelectorAll('.row-cb:not(:checked)').length === 0;
+            const allVisibleCheckboxes = tableContainer.querySelectorAll('.row-cb');
+            document.getElementById('select-all-cb').checked = allVisibleCheckboxes.length > 0 && allVisibleCheckboxes.length === selection.length;
             createSummaryBtn.disabled = selection.length === 0;
         } else if (target.id === 'select-all-cb') {
             const isChecked = target.checked;
@@ -275,5 +276,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INITIALIZE THE APP ---
     initializeApp();
-
 });
