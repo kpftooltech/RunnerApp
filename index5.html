@@ -17,9 +17,8 @@
             --text-color: #212529;
             --text-muted: #6c757d;
             --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            --selection-bg: #e0f2ff; /* NEW: Light blue for selected rows */
+            --selection-bg: #e0f2ff; /* Light blue for selected rows */
         }
-
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--light-bg);
@@ -27,7 +26,6 @@
             margin: 0;
             padding-top: 4px;
         }
-
         .container {
             width: 95%;
             max-width: 1400px;
@@ -37,17 +35,14 @@
             box-shadow: var(--shadow);
             border-radius: 12px;
         }
-
         h1 { text-align: center; font-weight: 700; margin-bottom: 1.5rem; }
-
         .controls { 
             display: grid; 
-            grid-template-columns: 1fr 1fr auto; /* NEW: Grid layout for controls */
+            grid-template-columns: 1fr 1fr auto; 
             gap: 1rem; 
             margin-bottom: 1.5rem; 
             align-items: center;
         }
-
         .controls input, .controls select {
             padding: 0.75rem 1rem;
             border-radius: 8px;
@@ -60,12 +55,11 @@
             box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
             border-color: var(--primary-color);
         }
-
         table { width: 100%; border-collapse: collapse; border-spacing: 0; }
         th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
         th { background-color: var(--light-bg); font-weight: 500; color: var(--text-muted); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
         
-        /* NEW: Styles for clickable rows */
+        /* Styles for clickable rows */
         tbody tr { cursor: pointer; transition: background-color 0.15s ease-in-out; }
         tbody tr:hover { background-color: var(--light-bg); }
         .selected-row { background-color: var(--selection-bg) !important; font-weight: 500; }
@@ -73,8 +67,7 @@
         .loader { text-align: center; font-size: 1.1rem; padding: 3rem; color: var(--text-muted); }
         #loading-bar-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 9999; display: none; }
         #loading-bar { height: 100%; width: 0%; background: var(--primary-color); transition: width 1.5s cubic-bezier(0.25, 1, 0.5, 1); }
-        
-        .page-view { }
+        .page-view {}
         .summary-item { display: grid; grid-template-columns: 1fr 80px; gap: 1rem; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); }
         .summary-item-info p { margin: 0; }
         .summary-item-info .code { font-weight: 500; }
@@ -82,18 +75,13 @@
         .summary-stats { background: var(--light-bg); padding: 1rem; border-radius: 8px; margin: 1.5rem 0; text-align: center; }
         .summary-stats h3 { margin-top: 0; }
         .summary-stats p { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); margin: 0; }
-        
         .primary-btn { background: var(--primary-color); color: white; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease; white-space: nowrap; }
         .primary-btn:hover { background: #0069d9; }
         .primary-btn:disabled { background: #aaa; cursor: not-allowed; }
-
-        @media (max-width: 900px) {
-            .controls { grid-template-columns: 1fr; } /* Stack controls on smaller screens */
-        }
-
+        @media (max-width: 900px) { .controls { grid-template-columns: 1fr; } }
         @media (max-width: 768px) {
             table { border: 0; }
-            table thead { display: none; } /* Hide header on mobile, labels are in cells */
+            table thead { display: none; }
             table tr { display: block; margin-bottom: 1rem; border-radius: 10px; box-shadow: var(--shadow); border: 1px solid var(--border-color); }
             table td { display: block; text-align: right; border-bottom: 1px dashed var(--border-color); }
             table td::before { content: attr(data-label); float: left; font-weight: 500; color: var(--text-muted); text-transform: uppercase; font-size: 0.8rem; }
