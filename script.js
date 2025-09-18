@@ -1,4 +1,6 @@
-(function() {
+// This is the entire script. It waits for the HTML to be ready before running.
+document.addEventListener('DOMContentLoaded', () => {
+
     // --- CONFIGURATION ---
     const API_URL = 'https://script.google.com/macros/s/AKfycby65GNMnpg1PZgNwm1eagPC_7wFhKktPyQSHSTlbUlFybiV3_EJ43nX-Rn_2MmGLkQF/exec'; 
 
@@ -7,7 +9,7 @@
     let displayHeaders = []; 
     let selection = [];
 
-    // --- DOM ELEMENTS ---
+    // --- DOM ELEMENTS (now safely accessed after the page loads) ---
     const mainPage = document.getElementById('main-page');
     const summaryPage = document.getElementById('summary-page');
     const createSummaryBtn = document.getElementById('create-summary-btn');
@@ -46,7 +48,6 @@
         
         let html = '';
         selectedItems.forEach(item => {
-            // --- THIS IS THE CORRECTED LINE ---
             html += `
                 <div class="summary-item" data-code="${item.CODE}">
                     <div class="summary-item-info">
@@ -229,8 +230,7 @@
         fetchAndUpdateCache(); 
     }
     
-    // --- EVENT LISTENERS ---
-    document.addEventListener('DOMContentLoaded', initializeApp);
+    // --- EVENT LISTENERS (now safely inside the DOMContentLoaded wrapper) ---
     searchInput.addEventListener('input', () => renderTable(allPoData));
     statusFilter.addEventListener('change', () => renderTable(allPoData));
     createSummaryBtn.addEventListener('click', showSummaryView);
@@ -272,4 +272,8 @@
             else alert('Please enter a quantity greater than 0.');
         }
     });
-})();
+
+    // --- INITIALIZE THE APP ---
+    initializeApp();
+
+});
