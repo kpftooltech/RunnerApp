@@ -1,30 +1,43 @@
 // --- CONFIGURATION ---
-// PASTE THE WEB APP URL YOU COPIED FROM THE APPS SCRIPT DEPLOYMENT
 const API_URL = 'https://script.google.com/macros/s/AKfycby65GNMnpg1PZgNwm1eagPC_7wFhKktPyQSHSTlbUlFybiV3_EJ43nX-Rn_2MmGLkQF/exec'; 
 
 // --- STATE ---
-let allPoData = []; // This will hold the current data for filtering/display
+let allPoData = []; 
 
 // --- DOM ELEMENTS ---
 const searchInput = document.getElementById('searchInput');
 const statusFilter = document.getElementById('statusFilter');
 const tableContainer = document.getElementById('table-container');
+const loadingBarContainer = document.getElementById('loading-bar-container'); // NEW
+const loadingBar = document.getElementById('loading-bar'); // NEW
+
+// --- NEW: Loading Bar Controls ---
+function showLoadingBar() {
+    loadingBarContainer.style.display = 'block';
+    loadingBar.style.width = '0%';
+    // A tiny timeout allows the browser to apply the 'display: block' before starting the transition
+    setTimeout(() => { loadingBar.style.width = '85%'; }, 50); 
+}
+
+function hideLoadingBar() {
+    loadingBar.style.width = '100%';
+    // Wait for the animation to finish before hiding the container
+    setTimeout(() => { loadingBarContainer.style.display = 'none'; }, 1600); 
+}
 
 
 // --- FUNCTIONS ---
 
-// 1. NEW - Main function to start the application
+// 1. Main function to start the application
 function initializeApp() {
     const isCacheLoaded = loadFromCache();
-    // If cache isn't loaded, the fetch function will show the "Loading..." message.
-    // If cache is loaded, the user sees data instantly while we refresh in the background.
     if (!isCacheLoaded) {
         tableContainer.innerHTML = `<p class="loader">Fetching fresh data...</p>`;
     }
     fetchAndUpdateCache(); 
 }
 
-// 2. NEW - Function to load data from localStorage
+// 2. Function to load data from localStorage
 function loadFromCache() {
     const cachedData = localStorage.getItem('poDataCache');
     if (cachedData) {
@@ -37,8 +50,9 @@ function loadFromCache() {
     return false;
 }
 
-// 3. NEW - Function to fetch data and update the cache if needed
+// 3. Function to fetch data and update the cache (MODIFIED)
 async function fetchAndUpdateCache() {
+    showLoadingBar(); // Show the bar before fetching
     try {
         const response = await fetch(API_URL);
         if (!response.ok) throw new Error(`Network response was not ok (${response.status})`);
@@ -47,7 +61,6 @@ async function fetchAndUpdateCache() {
         const freshDataString = JSON.stringify(freshData);
         const cachedDataString = localStorage.getItem('poDataCache');
 
-        // Only re-render and update cache if the data has actually changed
         if (freshDataString !== cachedDataString) {
             console.log("Data has changed. Updating view and cache.");
             allPoData = freshData;
@@ -58,33 +71,32 @@ async function fetchAndUpdateCache() {
         }
 
     } catch (error) {
-        // Only show error if there's no cached data to display
         if (allPoData.length === 0) {
             tableContainer.innerHTML = `<p class="loader" style="color: red;">Error: ${error.message}</p>`;
         }
         console.error("Failed to fetch fresh data:", error);
+    } finally {
+        hideLoadingBar(); // Always hide the bar when done
     }
 }
 
-// 4. Render the table (This function is mostly the same)
+// 4. Render the table (Slightly modified filter logic)
 function renderTable(data) {
-    // Apply search filter
     const searchTerm = searchInput.value.toLowerCase();
     let filteredData = searchTerm
         ? data.filter(row => 
-            row.CODE.toString().toLowerCase().includes(searchTerm) ||
-            row.ITEM.toString().toLowerCase().includes(searchTerm) ||
-            row['PO Number'].toString().toLowerCase().includes(searchTerm)
+            String(row.CODE).toLowerCase().includes(searchTerm) ||
+            String(row.ITEM).toLowerCase().includes(searchTerm) ||
+            String(row['PO Number']).toLowerCase().includes(searchTerm)
           )
-        : [...data]; // Use a copy of the data
+        : [...data];
     
-    // Apply status filter
-    if (statusFilter.value !== 'all') {
-        filteredData = filteredData.filter(row => row['PO Status'] === statusFilter.value);
-    } else {
-         // Default view: Hide "Received" items unless explicitly selected
-         filteredData = filteredData.filter(row => row['PO Status'] !== 'Received');
-    }
+    const filterValue = statusFilter.value;
+    if (filterValue === 'all') { // Default: Pending & Partial
+        filteredData = filteredData.filter(row => row['PO Status'] === 'Pending' || row['PO Status'] === 'Partial');
+    } else if (filterValue === 'Received') {
+        filteredData = filteredData.filter(row => row['PO Status'] === 'Received');
+    } // If 'all-statuses', no status filter is applied
 
     if (filteredData.length === 0) {
         tableContainer.innerHTML = '<p class="loader">No matching records found.</p>';
@@ -119,7 +131,7 @@ function renderTable(data) {
 }
 
 
-// 5. Update a PO item (MODIFIED to force a refresh)
+// 5. Update a PO item
 async function receiveItem(code, quantity) {
     const btn = document.querySelector(`button[data-code="${code}"]`);
     const originalText = btn.textContent;
@@ -135,9 +147,7 @@ async function receiveItem(code, quantity) {
         });
         
         alert(`Successfully submitted receipt for ${quantity} of ${code}. Data will refresh.`);
-        // Force a fetch from the network to get the absolute latest data and update the cache.
         fetchAndUpdateCache(); 
-
     } catch (error) {
         console.error("Error updating PO:", error);
         alert(`Error updating PO: ${error.message}`);
@@ -147,22 +157,15 @@ async function receiveItem(code, quantity) {
 }
 
 // --- EVENT LISTENERS ---
-
-// Listen for page load
 document.addEventListener('DOMContentLoaded', initializeApp);
-
-// Listen for input in search and filter controls
 searchInput.addEventListener('input', () => renderTable(allPoData));
 statusFilter.addEventListener('change', () => renderTable(allPoData));
-
-// Listen for clicks on the receive buttons (using event delegation)
 tableContainer.addEventListener('click', function(event) {
     if (event.target.classList.contains('receive-btn')) {
         const button = event.target;
         const code = button.dataset.code;
         const qtyInput = button.previousElementSibling;
         const quantity = parseInt(qtyInput.value, 10);
-
         if (quantity > 0) {
             if (confirm(`Are you sure you want to receive ${quantity} of item ${code}?`)) {
                 receiveItem(code, quantity);
