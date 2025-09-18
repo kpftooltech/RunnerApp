@@ -16,12 +16,12 @@
             --border-color: #dee2e6;
             --text-color: #212529;
             --text-muted: #6c757d;
-            --shadow: 0 4px
- 6px rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --selection-bg: #e0f2ff; /* NEW: Light blue for selected rows */
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: var(--light-bg);
             color: var(--text-color);
             margin: 0;
@@ -38,16 +38,21 @@
             border-radius: 12px;
         }
 
-        h1 { text-align: center; color: var(--text-color); font-weight: 700; margin-bottom: 1.5rem; }
+        h1 { text-align: center; font-weight: 700; margin-bottom: 1.5rem; }
 
-        .controls { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .controls { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr auto; /* NEW: Grid layout for controls */
+            gap: 1rem; 
+            margin-bottom: 1.5rem; 
+            align-items: center;
+        }
 
         .controls input, .controls select {
             padding: 0.75rem 1rem;
             border-radius: 8px;
             border: 1px solid var(--border-color);
             font-size: 1rem;
-            flex-grow: 1;
             transition: box-shadow 0.2s ease;
         }
         .controls input:focus, .controls select:focus {
@@ -59,27 +64,17 @@
         table { width: 100%; border-collapse: collapse; border-spacing: 0; }
         th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
         th { background-color: var(--light-bg); font-weight: 500; color: var(--text-muted); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
-
-        .receive-cell { display: flex; gap: 0.5rem; align-items: center; }
-        .receive-cell input { width: 50px; padding: 0.5rem; text-align: center; border: 1px solid var(--border-color); border-radius: 6px; }
-        .receive-cell button { background: var(--success-color); color: white; border: none; padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background-color 0.2s ease; }
-        .receive-cell button:hover { background-color: #218838; }
-        .receive-cell button:disabled { background-color: #aaa; cursor: not-allowed; }
+        
+        /* NEW: Styles for clickable rows */
+        tbody tr { cursor: pointer; transition: background-color 0.15s ease-in-out; }
+        tbody tr:hover { background-color: var(--light-bg); }
+        .selected-row { background-color: var(--selection-bg) !important; font-weight: 500; }
 
         .loader { text-align: center; font-size: 1.1rem; padding: 3rem; color: var(--text-muted); }
-        
-        /* --- NEW: Style for search highlighting --- */
-        mark {
-            background-color: #ffdd57; /* A pleasant yellow */
-            padding: 2px 4px;
-            border-radius: 4px;
-            color: #333;
-        }
         #loading-bar-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 9999; display: none; }
         #loading-bar { height: 100%; width: 0%; background: var(--primary-color); transition: width 1.5s cubic-bezier(0.25, 1, 0.5, 1); }
         
-        .page-view { /* Used for switching between main and summary */ }
-
+        .page-view { }
         .summary-item { display: grid; grid-template-columns: 1fr 80px; gap: 1rem; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); }
         .summary-item-info p { margin: 0; }
         .summary-item-info .code { font-weight: 500; }
@@ -88,41 +83,42 @@
         .summary-stats h3 { margin-top: 0; }
         .summary-stats p { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); margin: 0; }
         
-        .primary-btn { background: var(--primary-color); color: white; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease; width: 100%; }
+        .primary-btn { background: var(--primary-color); color: white; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease; white-space: nowrap; }
         .primary-btn:hover { background: #0069d9; }
         .primary-btn:disabled { background: #aaa; cursor: not-allowed; }
 
+        @media (max-width: 900px) {
+            .controls { grid-template-columns: 1fr; } /* Stack controls on smaller screens */
+        }
+
         @media (max-width: 768px) {
             table { border: 0; }
-            table thead { border: none; clip: rect(0 0 0 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; }
+            table thead { display: none; } /* Hide header on mobile, labels are in cells */
             table tr { display: block; margin-bottom: 1rem; border-radius: 10px; box-shadow: var(--shadow); border: 1px solid var(--border-color); }
             table td { display: block; text-align: right; border-bottom: 1px dashed var(--border-color); }
             table td::before { content: attr(data-label); float: left; font-weight: 500; color: var(--text-muted); text-transform: uppercase; font-size: 0.8rem; }
             table td:last-child { border-bottom: 0; }
-            .receive-cell { justify-content: flex-end; }
         }
     </style>
 </head>
 <body>
-    <div id="loading-bar-container">
-        <div id="loading-bar"></div>
-    </div>
+    <div id="loading-bar-container"><div id="loading-bar"></div></div>
 
     <div id="main-page" class="page-view">
         <div class="container">
             <h1>PO Receiving</h1>
             <div class="controls">
-                <input type="text" id="searchInput" placeholder="Search">
+                <input type="text" id="searchInput" placeholder="Search any column...">
                 <select id="statusFilter">
                     <option value="all">Pending & Partial</option>
                     <option value="Received">Received</option>
                     <option value="all-statuses">Show All</option>
                 </select>
+                <button id="create-summary-btn" class="primary-btn" disabled>Create Delivery Summary</button>
             </div>
             <div id="table-container">
                 <p class="loader">Initializing...</p>
             </div>
-            <button id="create-summary-btn" class="primary-btn" style="margin-top: 1rem;" disabled>Create Delivery Summary</button>
         </div>
     </div>
 
@@ -130,12 +126,10 @@
         <div class="container">
             <h1>Delivery Summary</h1>
             <div id="summary-list"></div>
-            
             <div class="summary-stats">
                 <h3>Session Totals</h3>
                 <p><span id="total-items">0</span> Items / <span id="total-qty">0</span> Pcs</p>
             </div>
-            
             <button id="submit-summary-btn" class="primary-btn">Submit Delivery</button>
             <button id="cancel-summary-btn" style="background: var(--text-muted); margin-top: 0.5rem;" class="primary-btn">Cancel</button>
         </div>
