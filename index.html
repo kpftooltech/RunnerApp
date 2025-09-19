@@ -1,37 +1,343 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <base target="_top">
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DC Management</title>
+    <title>DC Management Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-      :root { --main-bg: #f8f9fa; --border-color: #dee2e6; --selected-bg: #dbeaff; --button-bg: #28a745; --button-hover: #218838; }
-      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; display: flex; height: 100vh; margin: 0; background-color: var(--main-bg); }
-      #left-panel, #right-panel { padding: 15px; overflow-y: auto; box-sizing: border-box; }
-      #left-panel { width: 45%; border-right: 1px solid var(--border-color); }
-      #right-panel { width: 55%; }
-      .dc-row { padding: 12px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background-color 0.2s; display: flex; justify-content: space-between; align-items: center; }
-      .dc-row:hover { background-color: #f1f3f5; }
-      .dc-row.selected { background-color: var(--selected-bg); }
-      .finalize-btn { padding: 6px 12px; font-size: 0.9em; background-color: var(--button-bg); color: white; border: none; cursor: pointer; border-radius: 4px; transition: background-color 0.2s; }
-      .finalize-btn:hover { background-color: var(--button-hover); }
-      .finalize-btn:disabled { background-color: #6c757d; cursor: not-allowed; }
-      #loader { font-size: 1.2em; color: #6c757d; text-align: center; margin-top: 20px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-      th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border-color); }
-      th { background-color: #e9ecef; }
+        body { font-family: 'Inter', sans-serif; }
+        .nav-link { transition: all 0.2s; border-bottom: 2px solid transparent; }
+        .nav-link:hover { border-bottom-color: #3b82f6; color: #1e3a8a; }
+        .nav-link.active { border-bottom-color: #1d4ed8; font-weight: 600; color: #1e3a8a; }
+        .parent-row { transition: background-color 0.2s; cursor: pointer; }
+        .parent-row:hover { background-color: #eff6ff; }
+        .parent-row.selected { background-color: #dbeafe; }
+        .loader { border-top-color: #3498db; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        /* Toast Notification */
+        #toast { visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 10; left: 50%; transform: translateX(-50%); bottom: 30px; }
+        #toast.show { visibility: visible; -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @-webkit-keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+        @-webkit-keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+        @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
     </style>
-  </head>
-  <body>
-    <div id="left-panel">
-      <h2>Delivery Challans</h2>
-      <div id="loader">🔄 Loading data...</div>
-      <div id="parent-list"></div>
-    </div>
-    <div id="right-panel">
-      <h2>Items</h2>
-      <div id="child-items-list"><p>Select a DC from the left to view items.</p></div>
-    </div>
-    <script src="main.js"></script>
-  </body>
+</head>
+<body class="bg-gray-100">
+    <!-- Header Navigation -->
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-blue-800">DC Portal</h1>
+            <nav class="flex space-x-6 text-gray-600">
+                <a href="#" id="nav-view-dcs" class="nav-link active py-2">View DCs</a>
+                <a href="#" id="nav-add-dc" class="nav-link py-2">Add New DC</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-6">
+        <!-- View for Listing DCs -->
+        <div id="view-dcs-page">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Delivery Challans</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <!-- Left Partition -->
+                <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-md">
+                    <div id="parent-table-container">
+                        <div class="flex justify-center items-center h-64">
+                            <div class="loader h-12 w-12 border-4 border-gray-200 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Right Partition: Details and Actions -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                    <div id="child-container-wrapper" class="flex flex-col h-full">
+                         <div id="child-table-container" class="flex-grow">
+                            <div class="text-center text-gray-500 pt-10">Select a DC from the left to view its items and actions.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View for Adding a New DC -->
+        <div id="add-dc-page" class="hidden">
+             <h2 class="text-3xl font-bold text-gray-800 mb-6">Create New Delivery Challan</h2>
+            <form id="add-dc-form" class="space-y-6 bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <input type="text" name="Prepared By" placeholder="Prepared By" class="p-3 border rounded-md" required>
+                    <input type="text" name="From Supplier" placeholder="From Supplier" class="p-3 border rounded-md" required>
+                    <input type="text" name="To Supplier" placeholder="To Supplier" class="p-3 border rounded-md" required>
+                    <input type="text" name="Job Type" placeholder="Job Type" class="p-3 border rounded-md" required>
+                    <input type="url" name="DC Link" placeholder="DC Link (Optional)" class="md:col-span-2 p-3 border rounded-md">
+                </div>
+                <div class="border-t pt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-semibold text-gray-700">Items</h3>
+                        <button type="button" id="add-item-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Add Item</button>
+                    </div>
+                    <div id="items-list" class="space-y-4"></div>
+                </div>
+                <div class="text-right border-t pt-6">
+                    <button type="submit" class="bg-green-600 text-white font-bold px-6 py-3 rounded-md hover:bg-green-700">Create DC</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Toast Notification Element -->
+    <div id="toast"></div>
+
+    <script>
+        const EXEC_URL = 'https://script.google.com/macros/s/AKfycbwNvDHrRM50wNdArPjJusrCeuxxFQetuB8L1SzXrwEyInbZNgyb6OnrWt8bPywXlTXgEQ/exec';
+        
+        let allDcData = [];
+        let allDcItemsData = [];
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            fetchData();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('nav-view-dcs').addEventListener('click', (e) => { e.preventDefault(); switchPage('view-dcs'); });
+            document.getElementById('nav-add-dc').addEventListener('click', (e) => { e.preventDefault(); switchPage('add-dc'); });
+            document.getElementById('add-item-btn').addEventListener('click', addNewItemRow);
+            document.getElementById('add-dc-form').addEventListener('submit', handleAddDcSubmit);
+        }
+
+        function switchPage(page) {
+            document.getElementById('view-dcs-page').classList.toggle('hidden', page !== 'view-dcs');
+            document.getElementById('add-dc-page').classList.toggle('hidden', page !== 'add-dc');
+            document.getElementById('nav-view-dcs').classList.toggle('active', page === 'view-dcs');
+            document.getElementById('nav-add-dc').classList.toggle('active', page === 'add-dc');
+            
+            if (page === 'add-dc') {
+                document.getElementById('add-dc-form').reset();
+                document.getElementById('items-list').innerHTML = '';
+                addNewItemRow();
+            }
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch(`${EXEC_URL}?action=getData`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                
+                const drafts = data.dc.filter(d => d.Status === 'Draft').sort((a,b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+                const others = data.dc.filter(d => d.Status !== 'Draft').sort((a,b) => {
+                    const numA = parseInt((a['DC Number'] || 'DC-0').split('-')[1] || 0);
+                    const numB = parseInt((b['DC Number'] || 'DC-0').split('-')[1] || 0);
+                    return numB - numA;
+                });
+
+                allDcData = [...drafts, ...others];
+                allDcItemsData = data.dc_items;
+
+                renderParentTable(allDcData);
+                clearChildView();
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                document.getElementById('parent-table-container').innerHTML = `<p class="text-red-600">Failed to load data. Please check deployment permissions and console.</p>`;
+            }
+        }
+        
+        function renderParentTable(dcList) {
+            const parentContainer = document.getElementById('parent-table-container');
+            if (!dcList || dcList.length === 0) {
+                parentContainer.innerHTML = `<p class="text-gray-500">No DCs found.</p>`;
+                return;
+            }
+            const table = `
+                <table class="w-full text-sm text-left text-gray-600">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-6 py-3">DC No.</th>
+                            <th class="px-6 py-3">Date & Time</th>
+                            <th class="px-6 py-3">Prepared By</th>
+                            <th class="px-6 py-3">To Supplier</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${dcList.map(dc => {
+                            const statusColor = dc.Status === 'Draft' ? 'bg-orange-500' : 'bg-green-500';
+                            const dcNumberDisplay = dc['DC Number'] || 'Draft';
+                            const formattedDate = new Date(dc.Timestamp).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+                            return `
+                            <tr data-transferid="${dc.TransferID}" onclick="showChildItems('${dc.TransferID}', this)" class="parent-row bg-white border-b">
+                                <td class="px-4 py-4"><span class="inline-block w-3 h-3 ${statusColor} rounded-full"></span></td>
+                                <td class="px-6 py-4 font-medium text-gray-900">${dcNumberDisplay}</td>
+                                <td class="px-6 py-4">${formattedDate}</td>
+                                <td class="px-6 py-4">${dc['Prepared By']}</td>
+                                <td class="px-6 py-4">${dc['To Supplier']}</td>
+                            </tr>
+                        `}).join('')}
+                    </tbody>
+                </table>
+            `;
+            parentContainer.innerHTML = table;
+        }
+
+        function showChildItems(transferId, rowElement) {
+            document.querySelectorAll('.parent-row').forEach(row => row.classList.remove('selected'));
+            rowElement.classList.add('selected');
+
+            const dc = allDcData.find(d => d.TransferID === transferId);
+            const items = allDcItemsData.filter(item => String(item.TransferID) === String(transferId));
+            const childContainer = document.getElementById('child-table-container');
+            
+            let itemsHtml = `<div class="text-center text-gray-500 pt-10">No items for this DC.</div>`;
+            if (items.length > 0) {
+                itemsHtml = `
+                    <table class="w-full text-sm text-left text-gray-600">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr><th class="px-4 py-2">S.No</th><th class="px-4 py-2">Item Code</th><th class="px-4 py-2">Qty</th></tr>
+                        </thead>
+                        <tbody>
+                            ${items.map((item, index) => `
+                                <tr class="bg-white border-b"><td class="px-4 py-2">${index + 1}</td><td class="px-4 py-2 font-medium">${item.ItemCode}</td><td class="px-4 py-2">${item.Quantity}</td></tr>
+                            `).join('')}
+                        </tbody>
+                    </table>`;
+            }
+
+            let actionBarHtml = '';
+            if (dc.Status === 'Draft') {
+                actionBarHtml = `
+                    <button onclick="deleteDc('${dc.TransferID}')" class="bg-red-600 text-white font-bold px-4 py-2 rounded-md hover:bg-red-700">Delete</button>
+                    <button onclick="submitDc('${dc.TransferID}')" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-md hover:bg-blue-700">Submit</button>
+                `;
+            } else if (dc.Status === 'Submitted' && dc['DC Link']) {
+                actionBarHtml = `<button onclick="printDc('${dc['DC Link']}')" class="bg-green-600 text-white font-bold px-4 py-2 rounded-md hover:bg-green-700">Print</button>`;
+            }
+
+            childContainer.innerHTML = `
+                <div class="flex flex-col h-full">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Details for ${dc['DC Number'] || 'Draft'}</h3>
+                    <div class="flex-grow overflow-y-auto">${itemsHtml}</div>
+                    <div class="border-t mt-4 pt-4 text-right space-x-2">${actionBarHtml}</div>
+                </div>
+            `;
+        }
+        
+        function clearChildView() {
+            document.getElementById('child-table-container').innerHTML = `<div class="text-center text-gray-500 pt-10">Select a DC from the left to view its items and actions.</div>`;
+        }
+
+        async function submitDc(transferId) {
+            if (!confirm(`Are you sure you want to submit this DC? This action cannot be undone.`)) return;
+            await updateStatus(transferId, 'Submitted');
+        }
+
+        async function deleteDc(transferId) {
+            if (!confirm(`Are you sure you want to PERMANENTLY DELETE this draft?`)) return;
+            showToast('Deleting DC...');
+            try {
+                const response = await fetch(EXEC_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+                    body: JSON.stringify({ action: 'deleteDc', transferId: transferId })
+                });
+                const result = await response.json();
+                if (result.status !== 'success') throw new Error(result.message);
+                showToast('DC deleted successfully!', 'success');
+                fetchData();
+            } catch (error) {
+                console.error('Error deleting DC:', error);
+                showToast(`Deletion Failed: ${error.message}`, 'error');
+            }
+        }
+
+        function printDc(url) {
+            window.open(url, '_blank');
+        }
+
+        async function updateStatus(transferId, newStatus) {
+            showToast(`Updating status to ${newStatus}...`);
+            try {
+                const response = await fetch(EXEC_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+                    body: JSON.stringify({ action: 'updateStatus', transferId: transferId, newStatus: newStatus })
+                });
+                const result = await response.json();
+                if (result.status !== 'success') throw new Error(result.message);
+                showToast('Status updated successfully!', 'success');
+                fetchData();
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showToast(`Update Failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function addNewItemRow() {
+            const div = document.createElement('div');
+            div.className = 'grid grid-cols-12 gap-2 item-row';
+            div.innerHTML = `
+                <input type="text" placeholder="Item Code" class="col-span-5 p-2 border rounded-md" required>
+                <input type="number" placeholder="Quantity" class="col-span-3 p-2 border rounded-md" required>
+                <input type="text" placeholder="Note (Optional)" class="col-span-3 p-2 border rounded-md">
+                <button type="button" onclick="this.parentElement.remove()" class="col-span-1 bg-red-500 text-white rounded-md hover:bg-red-600">-</button>
+            `;
+            document.getElementById('items-list').appendChild(div);
+        }
+        
+        async function handleAddDcSubmit(event) {
+            event.preventDefault();
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Creating...';
+            showToast('Submitting new DC...');
+
+            const formData = new FormData(event.target);
+            const dcData = Object.fromEntries(formData.entries());
+
+            const itemsData = Array.from(document.querySelectorAll('.item-row')).map(row => {
+                const inputs = row.querySelectorAll('input');
+                return { ItemCode: inputs[0].value, Quantity: inputs[1].value, Note: inputs[2].value };
+            }).filter(item => item.ItemCode && item.Quantity);
+
+            if (itemsData.length === 0) {
+                showToast('Error: You must add at least one item.', 'error');
+                submitButton.disabled = false;
+                submitButton.textContent = 'Create DC';
+                return;
+            }
+
+            try {
+                const response = await fetch(EXEC_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'addDc', dcData, itemsData })
+                });
+                const result = await response.json();
+                if (result.status !== 'success') throw new Error(result.message);
+                showToast('New DC created successfully!', 'success');
+                await fetchData(); 
+                switchPage('view-dcs'); 
+            } catch (error) {
+                console.error('Error adding DC:', error);
+                showToast(`Creation Failed: ${error.message}`, 'error');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Create DC';
+            }
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'show';
+            if (type === 'success') toast.style.backgroundColor = '#28a745';
+            else if (type === 'error') toast.style.backgroundColor = '#dc3545';
+            else toast.style.backgroundColor = '#333';
+            setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3000);
+        }
+    </script>
+</body>
 </html>
+
