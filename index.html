@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DC Management</title>
+    <style>
+      :root { --main-bg: #f8f9fa; --border-color: #dee2e6; --selected-bg: #dbeaff; --button-bg: #28a745; --button-hover: #218838; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; display: flex; height: 100vh; margin: 0; background-color: var(--main-bg); }
+      #left-panel, #right-panel { padding: 15px; overflow-y: auto; box-sizing: border-box; }
+      #left-panel { width: 45%; border-right: 1px solid var(--border-color); }
+      #right-panel { width: 55%; }
+      .dc-row { padding: 12px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background-color 0.2s; display: flex; justify-content: space-between; align-items: center; }
+      .dc-row:hover { background-color: #f1f3f5; }
+      .dc-row.selected { background-color: var(--selected-bg); }
+      .finalize-btn { padding: 6px 12px; font-size: 0.9em; background-color: var(--button-bg); color: white; border: none; cursor: pointer; border-radius: 4px; transition: background-color 0.2s; }
+      .finalize-btn:hover { background-color: var(--button-hover); }
+      .finalize-btn:disabled { background-color: #6c757d; cursor: not-allowed; }
+      #loader { font-size: 1.2em; color: #6c757d; text-align: center; margin-top: 20px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+      th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border-color); }
+      th { background-color: #e9ecef; }
+    </style>
+  </head>
+  <body>
+    <div id="left-panel">
+      <h2>Delivery Challans</h2>
+      <div id="loader">🔄 Loading data...</div>
+      <div id="parent-list"></div>
+    </div>
+    <div id="right-panel">
+      <h2>Items</h2>
+      <div id="child-items-list"><p>Select a DC from the left to view items.</p></div>
+    </div>
+    <script src="main.js"></script>
+  </body>
+</html>
