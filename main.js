@@ -1,66 +1,92 @@
-// This file contains all the client-side logic for your application.
+// --- NEW CONFIGURATION ---
+const SPREADSHEET_ID = '1mkmxX83zyr1SLFi9ax3fbxgOr7UmtmqgwCsVhTMjUkE';
+const API_KEY = 'AIzaSyC-Kr1zUvzyE_jV_GqWvHcE_cdnfQJ1wX8';
 
-// --- IMPORTANT ---
-// This is the API link from your Google Apps Script deployment.
-const API_URL = 'https://script.google.com/macros/s/AKfycbzg6d5-GxF8EQsSsYkbI4sN7FB2_dLiQVQYYOHSf2lwKWvJXWC-F1oulgsxZCpOYTD4/exec';
+// These are the names of your sheets (tabs)
+const PARENT_SHEET_NAME = 'dc';
+const CHILD_SHEET_NAME = 'dc_items';
 
-// Global variable to hold our application data (parents and children).
-let appData = {
-  parents: [],
-  children: []
-};
-const CACHE_KEY = 'dcManagementData'; // Key for local storage
+// --- Global variables and cache key remain the same ---
+let appData = { parents: [], children: [] };
+const CACHE_KEY = 'dcManagementData';
 
-/**
- * This function runs automatically when the page content is loaded.
- */
 window.addEventListener('DOMContentLoaded', () => {
   loadData();
 });
 
 /**
- * Handles loading data, either from local storage or by fetching from the server.
+ * NEW loadData function using the official Google Sheets API
  */
 function loadData() {
   const cachedData = localStorage.getItem(CACHE_KEY);
-
   if (cachedData) {
-    console.log("Loading data from Local Storage...");
+    console.log("Loading from cache...");
     appData = JSON.parse(cachedData);
     renderParentList();
     document.getElementById('loader').style.display = 'none';
-  } else {
-    console.log("Fetching fresh data from server...");
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'getInitialData' })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        // Convert the returned 2D arrays into more usable arrays of objects.
-        // Assumes your sheet columns are in the specified order.
-        appData.parents = data.parents.map(p => ({ transferId: p[0], timestamp: p[1], preparedBy: p[2], fromSupplier: p[3], toSupplier: p[4], jobType: p[5], status: p[6], dcLink: p[7] }));
-        appData.children = data.children.map(c => ({ transferId: c[0], itemCode: c[1], quantity: c[2], note: c[3] }));
-        
-        localStorage.setItem(CACHE_KEY, JSON.stringify(appData));
-        renderParentList();
-        document.getElementById('loader').style.display = 'none';
-      } else {
-        document.getElementById('loader').innerText = 'Error loading data: ' + data.message;
-      }
-    })
-    .catch(error => {
-        console.error('Fetch Error:', error);
-        document.getElementById('loader').innerText = 'A network error occurred. Please check the console.';
-    });
+    return;
   }
+  
+  console.log("Fetching fresh data from Google Sheets API...");
+
+  // We need to make two separate calls to get both sheets
+  const parentUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${PARENT_SHEET_NAME}?key=${API_KEY}`;
+  const childUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${CHILD_SHEET_NAME}?key=${API_KEY}`;
+
+  Promise.all([
+    fetch(parentUrl),
+    fetch(childUrl)
+  ])
+  .then(responses => Promise.all(responses.map(res => res.json())))
+  .then(data => {
+    // The first element in `data` is the response for parents, the second is for children
+    const parentValues = data[0].values || [];
+    const childValues = data[1].values || [];
+
+    // The API returns a 2D array. We need to convert it to an array of objects.
+    const parentHeaders = parentValues.shift(); // Get headers from the first row
+    const childHeaders = childValues.shift();
+
+    appData.parents = parentValues.map(row => {
+      let obj = {};
+      parentHeaders.forEach((header, i) => obj[header] = row[i]);
+      return obj;
+    });
+
+    appData.children = childValues.map(row => {
+      let obj = {};
+      childHeaders.forEach((header, i) => obj[header] = row[i]);
+      return obj;
+    });
+    
+    localStorage.setItem(CACHE_KEY, JSON.stringify(appData));
+    renderParentList();
+    document.getElementById('loader').style.display = 'none';
+  })
+  .catch(error => {
+    console.error('Error fetching from Sheets API:', error);
+    document.getElementById('loader').innerText = 'Error loading data. Check console.';
+  });
 }
 
 /**
- * Renders the list of parent DCs in the left-side panel.
+ * IMPORTANT NOTE ON UPDATING DATA
+ * The finalizeDC function will NOT work with a simple API Key, as API keys are for
+ * public, read-only data. To WRITE or UPDATE data, you would need to implement
+ * a more advanced authentication system called OAuth 2.0.
+ *
+ * This is a much more complex topic. The first step is to get your data reading correctly.
  */
+function handleFinalizeClick(transferId, button) {
+    alert("Updating data requires a more advanced API setup (OAuth 2.0) that is not configured yet.");
+    // The old fetch call to the Apps Script URL is now removed.
+}
+
+
+// The renderParentList() and renderChildItems() functions remain the same as before,
+// but they now expect the data to be objects with named properties (e.g., parent.TransferID)
+// based on your sheet headers. You might need to adjust them slightly.
+
 function renderParentList() {
   const parentListDiv = document.getElementById('parent-list');
   parentListDiv.innerHTML = '';
@@ -68,38 +94,35 @@ function renderParentList() {
   appData.parents.forEach(parent => {
     const row = document.createElement('div');
     row.className = 'dc-row';
-    row.dataset.transferId = parent.transferId;
+    // IMPORTANT: Use the actual header names from your sheet here
+    row.dataset.transferId = parent.TransferID;
     
     const info = document.createElement('div');
-    info.innerHTML = `<strong>ID:</strong> ${parent.transferId}<br><strong>Status:</strong> <span class="status">${parent.status}</span>`;
+    info.innerHTML = `<strong>ID:</strong> ${parent.TransferID}<br><strong>Status:</strong> <span class="status">${parent.Status}</span>`;
     row.appendChild(info);
     
-    if (parent.status === 'Draft') {
+    if (parent.Status === 'Draft') {
       const button = document.createElement('button');
       button.className = 'finalize-btn';
       button.innerText = 'Finalize';
       button.onclick = (e) => {
         e.stopPropagation();
-        handleFinalizeClick(parent.transferId, button);
+        handleFinalizeClick(parent.TransferID, button);
       };
       row.appendChild(button);
     }
 
-    row.onclick = () => renderChildItems(parent.transferId);
+    row.onclick = () => renderChildItems(parent.TransferID);
     parentListDiv.appendChild(row);
   });
 }
 
-/**
- * Renders the child items in the right-side panel for a selected parent DC.
- * @param {string} transferId The ID of the parent DC to display children for.
- */
 function renderChildItems(transferId) {
   document.querySelectorAll('.dc-row').forEach(r => r.classList.remove('selected'));
   document.querySelector(`.dc-row[data-transfer-id='${transferId}']`).classList.add('selected');
 
   const childListDiv = document.getElementById('child-items-list');
-  const filteredChildren = appData.children.filter(child => child.transferId === transferId);
+  const filteredChildren = appData.children.filter(child => child.TransferID === transferId);
 
   if (filteredChildren.length === 0) {
     childListDiv.innerHTML = '<p>No items found for this DC.</p>';
@@ -108,47 +131,9 @@ function renderChildItems(transferId) {
 
   let html = '<table><thead><tr><th>#</th><th>Item Code</th><th>Quantity</th><th>Note</th></tr></thead><tbody>';
   filteredChildren.forEach((item, index) => {
-    html += `<tr><td>${index + 1}</td><td>${item.itemCode || ''}</td><td>${item.quantity || ''}</td><td>${item.note || ''}</td></tr>`;
+    // IMPORTANT: Use the actual header names from your child sheet here
+    html += `<tr><td>${index + 1}</td><td>${item.ItemCode || ''}</td><td>${item.Quantity || ''}</td><td>${item.Note || ''}</td></tr>`;
   });
   html += '</tbody></table>';
   childListDiv.innerHTML = html;
-}
-
-/**
- * Handles the click event for the "Finalize" button. Calls the back-end API.
- * @param {string} transferId The ID of the DC to be finalized.
- * @param {HTMLButtonElement} button The button element that was clicked.
- */
-function handleFinalizeClick(transferId, button) {
-  button.disabled = true;
-  button.innerText = '...';
-
-  fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'finalizeDC', transferId: transferId })
-  })
-  .then(response => response.json())
-  .then(response => {
-    if (response.success) {
-      const parentIndex = appData.parents.findIndex(p => p.transferId === response.transferId);
-      if (parentIndex > -1) {
-        appData.parents[parentIndex].status = 'Completed';
-        localStorage.setItem(CACHE_KEY, JSON.stringify(appData));
-      }
-      
-      renderParentList();
-      alert('DC Finalized Successfully!');
-    } else {
-      alert('Could not finalize: ' + response.message);
-      button.disabled = false;
-      button.innerText = 'Finalize';
-    }
-  })
-  .catch(error => {
-      console.error('Fetch Error:', error);
-      alert('A network error occurred while finalizing.');
-      button.disabled = false;
-      button.innerText = 'Finalize';
-  });
 }
