@@ -2,7 +2,7 @@
 
 // --- IMPORTANT ---
 // This is the API link from your Google Apps Script deployment.
-const API_URL = 'https://script.google.com/macros/s/AKfycbwOTpgaoSeg3Gvz3L72ILh0TgIGz0-sL8UAUD9FAjQhdK7IN2CIuTIppUqC22fqYzxc/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzg6d5-GxF8EQsSsYkbI4sN7FB2_dLiQVQYYOHSf2lwKWvJXWC-F1oulgsxZCpOYTD4/exec';
 
 // Global variable to hold our application data (parents and children).
 let appData = {
