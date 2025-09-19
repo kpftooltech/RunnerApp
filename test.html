@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Minimal API Test</title>
+</head>
+<body>
+  <h1>API Connection Test</h1>
+  <p>Checking connection... See the result below and in the console (F12).</p>
+  <hr>
+  <div id="result"></div>
+
+  <script>
+    // Paste the URL from your NEW, minimal script deployment here
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxoL3h9wZPdC5sLiGkWu3-HbVZmwn_nZryYPZzKtRQ8pBbtOK2Fr6WvN7skO27dcN6O/exec';
+    
+    const resultDiv = document.getElementById('result');
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'test' }) // The body can be anything
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.statusText}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('SUCCESS:', data);
+      resultDiv.style.color = 'green';
+      resultDiv.textContent = 'SUCCESS! Response: ' + JSON.stringify(data);
+    })
+    .catch(error => {
+      console.error('ERROR:', error);
+      resultDiv.style.color = 'red';
+      resultDiv.textContent = 'ERROR: ' + error.message + '. See console (F12) for details.';
+    });
+  </script>
+</body>
+</html>
